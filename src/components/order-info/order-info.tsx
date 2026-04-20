@@ -1,21 +1,42 @@
-import { FC, useMemo } from 'react';
+import { FC, useEffect, useMemo } from 'react';
 import { Preloader } from '../ui/preloader';
 import { OrderInfoUI } from '../ui/order-info';
 import { TIngredient } from '@utils-types';
+import { useParams } from 'react-router-dom';
+import { useDispatch, useSelector } from '../../services/store';
+import { fetchOrderByNumber } from '../../services/slices';
 
 export const OrderInfo: FC = () => {
-  /** TODO: взять переменные orderData и ingredients из стора */
-  const orderData = {
-    createdAt: '',
-    ingredients: [],
-    _id: '',
-    status: '',
-    name: '',
-    updatedAt: 'string',
-    number: 0
-  };
+  const dispatch = useDispatch();
+  const { number } = useParams();
+  const orderDataFromRequest = useSelector(
+    (state) => state.orderDetails.orderData
+  );
+  const feedOrders = useSelector((state) => state.feed.orders);
+  const profileOrders = useSelector((state) => state.profileOrders.orders);
+  const ingredients: TIngredient[] = useSelector(
+    (state) => state.ingredients.items
+  );
 
-  const ingredients: TIngredient[] = [];
+  const orderNumber = Number(number);
+  const localOrder = useMemo(
+    () =>
+      [...feedOrders, ...profileOrders].find(
+        (order) => order.number === orderNumber
+      ),
+    [feedOrders, profileOrders, orderNumber]
+  );
+  const orderData =
+    localOrder ||
+    (orderDataFromRequest?.number === orderNumber
+      ? orderDataFromRequest
+      : null);
+
+  useEffect(() => {
+    if (Number.isNaN(orderNumber)) return;
+    if (localOrder) return;
+    dispatch(fetchOrderByNumber(orderNumber));
+  }, [dispatch, localOrder, orderNumber]);
 
   /* Готовим данные для отображения */
   const orderInfo = useMemo(() => {
@@ -59,7 +80,7 @@ export const OrderInfo: FC = () => {
     };
   }, [orderData, ingredients]);
 
-  if (!orderInfo) {
+  if (!orderInfo || Number.isNaN(orderNumber)) {
     return <Preloader />;
   }
 
