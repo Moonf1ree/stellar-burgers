@@ -1,44 +1,90 @@
-import { useState, useRef, useEffect, FC } from 'react';
-import { useInView } from 'react-intersection-observer';
+import { useState, useRef, useEffect, useCallback, FC } from 'react';
 
 import { TTabMode } from '@utils-types';
 import { BurgerIngredientsUI } from '../ui/burger-ingredients';
+import { useSelector } from '../../services/store';
 
 export const BurgerIngredients: FC = () => {
-  /** TODO: взять переменные из стора */
-  const buns = [];
-  const mains = [];
-  const sauces = [];
+  const ingredients = useSelector((state) => state.ingredients.items);
+  const buns = ingredients.filter((item) => item.type === 'bun');
+  const mains = ingredients.filter((item) => item.type === 'main');
+  const sauces = ingredients.filter((item) => item.type === 'sauce');
 
   const [currentTab, setCurrentTab] = useState<TTabMode>('bun');
+  const isManualTabChange = useRef(false);
+  const manualTabTimer = useRef<number | null>(null);
   const titleBunRef = useRef<HTMLHeadingElement>(null);
   const titleMainRef = useRef<HTMLHeadingElement>(null);
   const titleSaucesRef = useRef<HTMLHeadingElement>(null);
+  const bunsRef = useRef<HTMLUListElement>(null);
+  const mainsRef = useRef<HTMLUListElement>(null);
+  const saucesRef = useRef<HTMLUListElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-  const [bunsRef, inViewBuns] = useInView({
-    threshold: 0
-  });
+  const updateTabByScrollPosition = useCallback(() => {
+    if (isManualTabChange.current || !contentRef.current) return;
 
-  const [mainsRef, inViewFilling] = useInView({
-    threshold: 0
-  });
+    const containerTop = contentRef.current.getBoundingClientRect().top;
+    const tabsPositions: Array<{ tab: TTabMode; distance: number }> = [];
 
-  const [saucesRef, inViewSauces] = useInView({
-    threshold: 0
-  });
+    if (titleBunRef.current) {
+      tabsPositions.push({
+        tab: 'bun',
+        distance: Math.abs(
+          titleBunRef.current.getBoundingClientRect().top - containerTop
+        )
+      });
+    }
+
+    if (titleMainRef.current) {
+      tabsPositions.push({
+        tab: 'main',
+        distance: Math.abs(
+          titleMainRef.current.getBoundingClientRect().top - containerTop
+        )
+      });
+    }
+
+    if (titleSaucesRef.current) {
+      tabsPositions.push({
+        tab: 'sauce',
+        distance: Math.abs(
+          titleSaucesRef.current.getBoundingClientRect().top - containerTop
+        )
+      });
+    }
+
+    if (!tabsPositions.length) return;
+
+    const nextTab = tabsPositions.sort((a, b) => a.distance - b.distance)[0]
+      .tab;
+    setCurrentTab((prevTab) => (prevTab === nextTab ? prevTab : nextTab));
+  }, []);
 
   useEffect(() => {
-    if (inViewBuns) {
-      setCurrentTab('bun');
-    } else if (inViewSauces) {
-      setCurrentTab('sauce');
-    } else if (inViewFilling) {
-      setCurrentTab('main');
-    }
-  }, [inViewBuns, inViewFilling, inViewSauces]);
+    updateTabByScrollPosition();
+  }, [buns.length, mains.length, sauces.length, updateTabByScrollPosition]);
+
+  useEffect(
+    () => () => {
+      if (manualTabTimer.current) {
+        window.clearTimeout(manualTabTimer.current);
+      }
+    },
+    []
+  );
 
   const onTabClick = (tab: string) => {
     setCurrentTab(tab as TTabMode);
+    isManualTabChange.current = true;
+
+    if (manualTabTimer.current) {
+      window.clearTimeout(manualTabTimer.current);
+    }
+    manualTabTimer.current = window.setTimeout(() => {
+      isManualTabChange.current = false;
+    }, 700);
+
     if (tab === 'bun')
       titleBunRef.current?.scrollIntoView({ behavior: 'smooth' });
     if (tab === 'main')
@@ -47,7 +93,9 @@ export const BurgerIngredients: FC = () => {
       titleSaucesRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  return null;
+  const onIngredientsScroll = () => {
+    updateTabByScrollPosition();
+  };
 
   return (
     <BurgerIngredientsUI
@@ -61,6 +109,8 @@ export const BurgerIngredients: FC = () => {
       bunsRef={bunsRef}
       mainsRef={mainsRef}
       saucesRef={saucesRef}
+      contentRef={contentRef}
+      onScroll={onIngredientsScroll}
       onTabClick={onTabClick}
     />
   );

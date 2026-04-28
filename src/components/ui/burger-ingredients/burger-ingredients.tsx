@@ -17,6 +17,8 @@ export const BurgerIngredientsUI: FC<BurgerIngredientsUIProps> = memo(
     bunsRef,
     mainsRef,
     saucesRef,
+    contentRef,
+    onScroll,
     onTabClick
   }) => (
     <>
@@ -42,7 +44,7 @@ export const BurgerIngredientsUI: FC<BurgerIngredientsUIProps> = memo(
             </Tab>
           </ul>
         </nav>
-        <div className={styles.content}>
+        <div className={styles.content} ref={contentRef} onScroll={onScroll}>
           <IngredientsCategory
             title='Булки'
             titleRef={titleBunRef}
