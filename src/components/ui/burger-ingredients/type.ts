@@ -1,4 +1,4 @@
-import { RefObject } from 'react';
+import { RefObject, UIEventHandler } from 'react';
 import { TIngredient, TTabMode } from '@utils-types';
 
 export type BurgerIngredientsUIProps = {
@@ -9,8 +9,10 @@ export type BurgerIngredientsUIProps = {
   titleBunRef: RefObject<HTMLHeadingElement>;
   titleMainRef: RefObject<HTMLHeadingElement>;
   titleSaucesRef: RefObject<HTMLHeadingElement>;
-  bunsRef: (node?: Element | null | undefined) => void;
-  mainsRef: (node?: Element | null | undefined) => void;
-  saucesRef: (node?: Element | null | undefined) => void;
+  bunsRef: RefObject<HTMLUListElement>;
+  mainsRef: RefObject<HTMLUListElement>;
+  saucesRef: RefObject<HTMLUListElement>;
+  contentRef: RefObject<HTMLDivElement>;
+  onScroll: UIEventHandler<HTMLDivElement>;
   onTabClick: (val: string) => void;
 };
