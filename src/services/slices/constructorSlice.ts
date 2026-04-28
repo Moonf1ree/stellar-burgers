@@ -13,6 +13,8 @@ type TConstructorState = {
   error: string | null;
 };
 
+type TAddIngredientPayload = TIngredient | TConstructorIngredient;
+
 const initialState: TConstructorState = {
   constructorItems: {
     bun: null,
@@ -43,19 +45,24 @@ export const constructorSlice = createSlice({
   initialState,
   reducers: {
     addIngredient: {
-      reducer: (state, action: PayloadAction<TConstructorIngredient>) => {
+      reducer: (state, action: PayloadAction<TAddIngredientPayload>) => {
         if (action.payload.type === 'bun') {
           state.constructorItems.bun = action.payload;
           return;
         }
 
-        state.constructorItems.ingredients.push(action.payload);
+        if ('id' in action.payload) {
+          state.constructorItems.ingredients.push(action.payload);
+        }
       },
       prepare: (ingredient: TIngredient) => ({
-        payload: {
-          ...ingredient,
-          id: uuidv4()
-        }
+        payload:
+          ingredient.type === 'bun'
+            ? ingredient
+            : {
+                ...ingredient,
+                id: uuidv4()
+              }
       })
     },
     removeIngredient: (state, action: PayloadAction<string>) => {
